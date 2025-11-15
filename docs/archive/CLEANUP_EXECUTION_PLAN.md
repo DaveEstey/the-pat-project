@@ -9,7 +9,7 @@ Since automated bash/cmd execution isn't working, please run these commands manu
 
 ```bash
 # Navigate to project root
-cd d:\dave_\Git\the-pat-project
+cd /path/to/the-pat-project
 
 # Delete debug components
 del src\components\Game\RenderingTest.jsx
