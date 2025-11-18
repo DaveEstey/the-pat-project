@@ -82,15 +82,22 @@ export class EnemyProjectileSystem {
     // Calculate direction to player FIRST
     const direction = playerPosition.clone().sub(startPosition).normalize();
 
-    // Adjust start position to be at enemy's "weapon/muzzle" position
-    // Offset upward (Y) and forward (along direction toward player)
+    // Adjust start position to be at enemy's weapon/shoulder position
+    // Enemy body is at y: 0.8, head at y: 1.5, so weapon should be at y: 1.3 (shoulder height)
+    const weaponHeight = 1.3; // Shoulder/weapon height for enemy model
+
     const muzzleOffset = new THREE.Vector3(
       direction.x * 0.8,  // 0.8 units forward toward player
-      0.5,                 // 0.5 units up (weapon height)
-      direction.z * 0.8    // 0.8 units forward in Z direction
+      weaponHeight,       // Fixed weapon height (shoulder level)
+      direction.z * 0.8   // 0.8 units forward in Z direction
     );
 
-    const adjustedStartPos = startPosition.clone().add(muzzleOffset);
+    // Use the startPosition as base (which is enemy.position at ground level)
+    const adjustedStartPos = new THREE.Vector3(
+      startPosition.x + muzzleOffset.x,
+      muzzleOffset.y,  // Absolute Y position (not relative to ground)
+      startPosition.z + muzzleOffset.z
+    );
 
     // Configure projectile based on enemy type
     this.configureProjectileForEnemyType(projectile, enemy, damage, direction);

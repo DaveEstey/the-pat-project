@@ -4,25 +4,29 @@ import { useGame } from '../../contexts/GameContext.jsx';
 /**
  * Level Results Screen - Shows level completion stats and auto-progresses to next level
  */
-export function LevelResultsScreen({ levelCompleted, onContinue }) {
+export function LevelResultsScreen({ levelCompleted, onContinue, onShop }) {
   const { state } = useGame();
   const [timeRemaining, setTimeRemaining] = useState(5);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     // Auto-progress countdown
     const interval = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          onContinue();
-          return 0;
-        }
-        return prev - 1;
-      });
+      // Only countdown if not paused
+      if (!isPaused) {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            onContinue();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [onContinue]);
+  }, [onContinue, isPaused]);
 
   // Keyboard handler for SPACE to skip
   useEffect(() => {
@@ -128,24 +132,42 @@ export function LevelResultsScreen({ levelCompleted, onContinue }) {
         {/* Auto-progress indicator */}
         <div className="text-center">
           <div className="text-gray-400 mb-2">
-            {levelCompleted < 12
-              ? `Advancing to Level ${levelCompleted + 1} in...`
-              : 'Game Complete! Returning to menu in...'
-            }
+            {isPaused ? (
+              'Timer Paused - Visit shop or continue'
+            ) : levelCompleted < 12 ? (
+              `Advancing to Level ${levelCompleted + 1} in...`
+            ) : (
+              'Game Complete! Returning to menu in...'
+            )}
           </div>
           <div className="text-6xl font-bold text-white mb-4">
             {timeRemaining}
           </div>
 
-          <button
-            onClick={onContinue}
-            className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 px-8 rounded-lg text-xl transition-colors"
-          >
-            Continue Now →
-          </button>
+          {/* Action Buttons */}
+          <div className="flex gap-4 justify-center mb-2">
+            <button
+              onClick={onContinue}
+              className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 px-8 rounded-lg text-xl transition-colors"
+            >
+              Continue Now →
+            </button>
+
+            {onShop && (
+              <button
+                onClick={() => {
+                  setIsPaused(true);
+                  onShop();
+                }}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors"
+              >
+                🛒 Weapon Shop
+              </button>
+            )}
+          </div>
 
           <div className="text-sm text-gray-500 mt-2">
-            Press SPACE or click to continue immediately
+            Press SPACE to continue immediately{onShop ? ' • Click Shop to upgrade weapons' : ''}
           </div>
         </div>
       </div>
