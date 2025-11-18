@@ -13,6 +13,17 @@ export class PuzzleSystem {
     this.puzzleTimer = 0;
     this.puzzleTimeLimit = 30000; // 30 seconds default
     this.puzzleHints = [];
+
+    // Listen for puzzle switch hits from combat system
+    this.handlePuzzleSwitchHit = this.handlePuzzleSwitchHit.bind(this);
+    window.addEventListener('puzzleSwitchHit', this.handlePuzzleSwitchHit);
+  }
+
+  handlePuzzleSwitchHit(event) {
+    const { switchId } = event.detail || {};
+    if (switchId !== undefined && this.currentPuzzle) {
+      this.handleSwitchClick(switchId);
+    }
   }
 
   // Initialize puzzle for current room
@@ -38,11 +49,17 @@ export class PuzzleSystem {
     // Start puzzle timer
     this.startPuzzleTimer();
 
-    // Emit puzzle started event
-    this.gameEngine.emit('puzzleStarted', {
+    // Emit puzzle started event (both gameEngine and window)
+    const startedEventData = {
       puzzle: this.currentPuzzle,
-      timeLimit: this.currentPuzzle.timeLimit
-    });
+      timeLimit: this.currentPuzzle.timeLimit,
+      type: puzzleConfig.type
+    };
+
+    this.gameEngine.emit('puzzleStarted', startedEventData);
+    window.dispatchEvent(new CustomEvent('puzzleStarted', {
+      detail: startedEventData
+    }));
 
     return this.currentPuzzle;
   }
@@ -439,6 +456,19 @@ export class PuzzleSystem {
     // Add to current sequence
     this.currentPuzzle.currentSequence.push(switchId);
 
+    // Update progress
+    const progress = this.currentPuzzle.currentSequence.length / this.currentPuzzle.targetSequence.length;
+    this.currentPuzzle.progress = progress;
+
+    // Dispatch progress event
+    window.dispatchEvent(new CustomEvent('puzzleProgress', {
+      detail: {
+        progress: progress,
+        currentStep: this.currentPuzzle.currentSequence.length,
+        totalSteps: this.currentPuzzle.targetSequence.length
+      }
+    }));
+
     // Update switch visual state
     const switchElement = this.currentPuzzle.elements.find(el => el.id === switchId);
     if (switchElement) {
@@ -677,12 +707,17 @@ export class PuzzleSystem {
     this.currentPuzzle.completed = true;
     this.currentPuzzle.state = 'completed';
 
-    // Emit completion event
-    this.gameEngine.emit('puzzleCompleted', {
+    // Emit completion event (both gameEngine and window)
+    const completedEventData = {
       puzzle: this.currentPuzzle,
       timeUsed: Date.now() - this.currentPuzzle.startTime,
       timeLimit: this.currentPuzzle.timeLimit
-    });
+    };
+
+    this.gameEngine.emit('puzzleCompleted', completedEventData);
+    window.dispatchEvent(new CustomEvent('puzzleCompleted', {
+      detail: completedEventData
+    }));
 
     // Clean up after delay
     setTimeout(() => {
@@ -696,11 +731,16 @@ export class PuzzleSystem {
     this.currentPuzzle.completed = true;
     this.currentPuzzle.state = 'failed';
 
-    // Emit failure event (but no damage as per spec)
-    this.gameEngine.emit('puzzleFailed', {
+    // Emit failure event (but no damage as per spec) (both gameEngine and window)
+    const failedEventData = {
       puzzle: this.currentPuzzle,
       reason: 'timeout'
-    });
+    };
+
+    this.gameEngine.emit('puzzleFailed', failedEventData);
+    window.dispatchEvent(new CustomEvent('puzzleFailed', {
+      detail: failedEventData
+    }));
 
     // Reset and try again or move on
     setTimeout(() => {
@@ -762,5 +802,8 @@ export class PuzzleSystem {
     this.cleanupPuzzle();
     this.activePuzzles.clear();
     this.puzzleElements.clear();
+
+    // Remove event listeners
+    window.removeEventListener('puzzleSwitchHit', this.handlePuzzleSwitchHit);
   }
 }

@@ -8,6 +8,7 @@ import LevelSelect from './components/UI/LevelSelect.jsx';
 import Settings from './components/UI/Settings.jsx';
 import HUD from './components/UI/HUD.jsx';
 import GameOverScreen from './components/UI/GameOverScreen.jsx';
+import LevelResultsScreen from './components/UI/LevelResultsScreen.jsx';
 import DamageIndicator from './components/UI/DamageIndicator.jsx';
 import StoryDialogue from './components/UI/StoryDialogue.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
@@ -16,7 +17,7 @@ import { GameStates } from './types/game.js';
 import { getLevelIntro, getLevelOutro } from './data/storyData.js';
 
 function GameContent() {
-  const { state } = useGame();
+  const { state, advanceToNextLevel } = useGame();
   const [currentStory, setCurrentStory] = useState(null);
   const [showStory, setShowStory] = useState(false);
 
@@ -86,16 +87,14 @@ function GameContent() {
         return <GameOverScreen />;
       case GameStates.LEVEL_COMPLETE:
         return (
-          <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-            <div className="bg-green-900 p-8 rounded-lg text-center text-white">
-              <h2 className="text-3xl font-bold mb-4">Level Complete!</h2>
-              <p className="text-lg mb-4">Score: {state.player.score}</p>
-              <p className="text-lg mb-4">Accuracy: {state.player.accuracy}%</p>
-              <button className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded">
-                Next Level
-              </button>
-            </div>
-          </div>
+          <>
+            {/* Show game canvas in background */}
+            <GameCanvasWrapper />
+            <LevelResultsScreen
+              levelCompleted={state.ui.completedLevel || state.currentLevel}
+              onContinue={advanceToNextLevel}
+            />
+          </>
         );
       default:
         return <MainMenu />;

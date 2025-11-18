@@ -79,20 +79,25 @@ export class EnemyProjectileSystem {
     // Get player position
     const playerPosition = this.getPlayerPosition();
 
-    // Adjust start position to be in front of enemy (not at center)
-    // Move projectile forward 1 unit from enemy position toward player
-    const adjustedStartPos = startPosition.clone();
-    adjustedStartPos.z += 1.0; // Move 1 unit toward player (positive Z)
+    // Calculate direction to player FIRST
+    const direction = playerPosition.clone().sub(startPosition).normalize();
 
-    // Calculate direction to player
-    const direction = playerPosition.clone().sub(adjustedStartPos).normalize();
+    // Adjust start position to be at enemy's "weapon/muzzle" position
+    // Offset upward (Y) and forward (along direction toward player)
+    const muzzleOffset = new THREE.Vector3(
+      direction.x * 0.8,  // 0.8 units forward toward player
+      0.5,                 // 0.5 units up (weapon height)
+      direction.z * 0.8    // 0.8 units forward in Z direction
+    );
+
+    const adjustedStartPos = startPosition.clone().add(muzzleOffset);
 
     // Configure projectile based on enemy type
     this.configureProjectileForEnemyType(projectile, enemy, damage, direction);
 
-    // Set projectile position and velocity (increased speed for visibility)
+    // Set projectile position and velocity (doubled speed for reliability)
     projectile.mesh.position.copy(adjustedStartPos);
-    projectile.velocity.copy(direction).multiplyScalar(projectile.speed * 1.5); // 50% faster
+    projectile.velocity.copy(direction).multiplyScalar(projectile.speed * 2.0); // 100% faster for reliable hits
     projectile.distanceTraveled = 0;
     projectile.active = true;
     projectile.createdTime = Date.now();

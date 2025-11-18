@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../../contexts/GameContext.jsx';
+import { UI_ZONES, Z_LAYERS, getUIClasses } from './UILayout.jsx';
 import HealthBar from './HealthBar.jsx';
 import ScoreDisplay from './ScoreDisplay.jsx';
 import ComboDisplay from './ComboDisplay.jsx';
@@ -25,21 +26,25 @@ const HUD = () => {
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
-      {/* Boss Health Bar */}
+      {/* Boss Health Bar - Top Center */}
       {bossData && bossData.health > 0 && (
-        <BossHealthBar
-          bossName={bossData.name || 'Boss'}
-          currentHealth={bossData.health}
-          maxHealth={bossData.maxHealth}
-          phase={bossData.phase || 1}
-        />
+        <div className={getUIClasses(UI_ZONES.BOSS_HEALTH, Z_LAYERS.HUD_BASE)}>
+          <BossHealthBar
+            bossName={bossData.name || 'Boss'}
+            currentHealth={bossData.health}
+            maxHealth={bossData.maxHealth}
+            phase={bossData.phase || 1}
+          />
+        </div>
       )}
 
-      {/* Top HUD */}
-      <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-        <div className="pointer-events-auto">
-          <HealthBar health={state.player.health} maxHealth={state.player.maxHealth} />
-        </div>
+      {/* Top Left: Health Bar */}
+      <div className={getUIClasses(UI_ZONES.TOP_LEFT, Z_LAYERS.HUD_BASE, 'pointer-events-auto')}>
+        <HealthBar health={state.player.health} maxHealth={state.player.maxHealth} />
+      </div>
+
+      {/* Top Right Stack: Score + Combo (prevents overlap) */}
+      <div className={getUIClasses(UI_ZONES.TOP_RIGHT_STACK, Z_LAYERS.HUD_BASE)}>
         <div className="pointer-events-auto">
           <ScoreDisplay
             score={state.player.score}
@@ -47,42 +52,30 @@ const HUD = () => {
             level={state.currentLevel}
           />
         </div>
+        {/* Combo Display will render here when active */}
+        <ComboDisplay />
       </div>
 
-      {/* Combo Display */}
-      <ComboDisplay />
-
-      {/* Ammo Counter */}
-      <AmmoCounter />
-
-      {/* Puzzle Display */}
+      {/* Middle Left: Puzzle Display (moved from bottom to avoid overlap) */}
       <PuzzleDisplay />
 
-      {/* Hit Marker */}
-      <HitMarker />
+      {/* Bottom Right: Ammo Counter */}
+      <AmmoCounter />
 
-      {/* Notification Display */}
-      <NotificationDisplay />
-
-      {/* Bottom HUD */}
-      <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-        {/* Weapon info now handled by WeaponController in GameCanvas */}
-
-        {/* Crosshair */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="relative">
-            <div className="w-6 h-6 border-2 border-white rounded-full opacity-75">
-              <div className="absolute top-1/2 left-1/2 w-2 h-0.5 bg-white transform -translate-x-1/2 -translate-y-1/2"></div>
-              <div className="absolute top-1/2 left-1/2 w-0.5 h-2 bg-white transform -translate-x-1/2 -translate-y-1/2"></div>
-            </div>
-          </div>
+      {/* Center: Crosshair */}
+      <div className={getUIClasses(UI_ZONES.CENTER, Z_LAYERS.HUD_BASE)}>
+        <div className="w-6 h-6 border-2 border-white rounded-full opacity-75">
+          <div className="absolute top-1/2 left-1/2 w-2 h-0.5 bg-white transform -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute top-1/2 left-1/2 w-0.5 h-2 bg-white transform -translate-x-1/2 -translate-y-1/2"></div>
         </div>
+      </div>
 
-        {/* Level progress */}
-        <div className="bg-black bg-opacity-50 text-white p-2 rounded">
+      {/* Bottom Center: Level Progress */}
+      <div className={getUIClasses(UI_ZONES.BOTTOM_CENTER, Z_LAYERS.HUD_BASE)}>
+        <div className="bg-black bg-opacity-50 text-white p-2 rounded pointer-events-auto">
           <div className="text-sm">Progress</div>
           <div className="w-32 h-2 bg-gray-600 rounded overflow-hidden">
-            <div 
+            <div
               className="h-full bg-green-500 transition-all duration-300"
               style={{ width: `${state.levelProgress || 0}%` }}
             ></div>
@@ -90,9 +83,15 @@ const HUD = () => {
         </div>
       </div>
 
+      {/* Hit Marker */}
+      <HitMarker />
+
+      {/* Notifications - Above center (doesn't block crosshair) */}
+      <NotificationDisplay />
+
       {/* Item notification overlay */}
       {state.ui.itemNotification && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className={getUIClasses(UI_ZONES.NOTIFICATION_STACK, Z_LAYERS.NOTIFICATIONS)}>
           <div className="bg-yellow-500 text-black px-6 py-3 rounded-lg font-bold text-xl animate-pulse">
             {state.ui.itemNotification}
           </div>

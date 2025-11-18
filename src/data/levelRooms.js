@@ -172,15 +172,14 @@ export function getLevelRooms(levelNumber) {
       {
         id: 'level_6_room_2',
         name: 'Library of Horrors',
-        description: 'Ancient tomes and ghostly defenders',
+        description: 'BOSS: Face the phantom overlord of the mansion',
         theme: 'haunted_library',
-        enemyCount: 4,
-        difficulty: 'hard',
+        enemyCount: 3,
+        difficulty: 'boss',
         enemyLayout: [
-          { type: 'ninja', position: { x: -3, y: 2, z: -11 }, health: 95, shootInterval: 2500 },
-          { type: 'armored', position: { x: 0, y: 0, z: -14 }, health: 180, shootInterval: 2500 },
-          { type: 'ninja', position: { x: 3, y: 2, z: -11 }, health: 95, shootInterval: 2500 },
-          { type: 'fast_debuffer', position: { x: 0, y: 1, z: -17 }, health: 70, shootInterval: 2500 }
+          { type: 'ninja', position: { x: -4, y: 0, z: -10 }, health: 95, shootInterval: 2500 },
+          { type: 'boss', position: { x: 0, y: 1.5, z: -14 }, health: 500, shootInterval: 3000, isBoss: true },
+          { type: 'ninja', position: { x: 4, y: 0, z: -10 }, health: 95, shootInterval: 2500 }
         ]
       }
     ],
@@ -264,17 +263,16 @@ export function getLevelRooms(levelNumber) {
       {
         id: 'level_9_room_2',
         name: 'Sacred Chamber',
-        description: 'Heart of the temple defenses',
+        description: 'BOSS: The temple guardian awakens from ancient slumber',
         theme: 'jungle_sacred',
-        enemyCount: 6,
-        difficulty: 'very_hard',
+        enemyCount: 5,
+        difficulty: 'boss',
         enemyLayout: [
           { type: 'ninja', position: { x: -5, y: 0, z: -10 }, health: 115, shootInterval: 2500 },
           { type: 'fast_debuffer', position: { x: -2, y: 1, z: -13 }, health: 85, shootInterval: 2500 },
-          { type: 'armored', position: { x: 0, y: 1, z: -16 }, health: 250, shootInterval: 2500 },
+          { type: 'boss', position: { x: 0, y: 2, z: -17 }, health: 650, shootInterval: 2800, isBoss: true },
           { type: 'fast_debuffer', position: { x: 2, y: 1, z: -13 }, health: 85, shootInterval: 2500 },
-          { type: 'ninja', position: { x: 5, y: 0, z: -10 }, health: 115, shootInterval: 2500 },
-          { type: 'bomb_thrower', position: { x: 0, y: 3, z: -20 }, health: 160, shootInterval: 2500 }
+          { type: 'ninja', position: { x: 5, y: 0, z: -10 }, health: 115, shootInterval: 2500 }
         ]
       }
     ],

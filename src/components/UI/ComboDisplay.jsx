@@ -68,8 +68,8 @@ export function ComboDisplay() {
 
   return (
     <>
-      {/* Combo Counter */}
-      <div className="absolute top-24 right-4 text-right z-50">
+      {/* Combo Counter - Now rendered within parent stack, no absolute positioning */}
+      <div className="text-right pointer-events-auto">
         <div
           className="relative"
           style={{
@@ -143,9 +143,9 @@ export function ComboDisplay() {
         </div>
       </div>
 
-      {/* Milestone Popup */}
+      {/* Milestone Popup - Fixed positioning */}
       {showMilestone && milestone && (
-        <div className="absolute top-12 right-4 z-50 animate-bounce">
+        <div className="absolute top-0 right-0 animate-bounce pointer-events-none">
           <div
             className="text-4xl font-bold px-6 py-3 rounded-lg bg-black bg-opacity-80 border-4"
             style={{

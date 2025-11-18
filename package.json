@@ -14,8 +14,7 @@
     "@react-three/fiber": "^8.15.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "three": "^0.168.0",
-    "tone": "^14.7.77"
+    "three": "^0.168.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

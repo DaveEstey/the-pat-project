@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { UI_ZONES, Z_LAYERS, getUIClasses } from './UILayout.jsx';
 
 /**
  * Ammo Counter - Shows current weapon ammo and reload status
@@ -55,9 +56,9 @@ export function AmmoCounter() {
   }
 
   return (
-    <div className="absolute bottom-4 right-4 z-50 select-none">
+    <div className={getUIClasses(UI_ZONES.BOTTOM_RIGHT, Z_LAYERS.HUD_BASE, 'select-none pointer-events-auto')}>
       {/* Main ammo display */}
-      <div className="bg-black bg-opacity-80 rounded-lg p-4 min-w-[200px]">
+      <div className="bg-black bg-opacity-80 rounded-lg p-4 min-w-[200px] sm:min-w-[180px] md:min-w-[200px]">
         {/* Weapon name */}
         <div className="text-white text-sm font-bold mb-2 uppercase tracking-wide">
           {weaponName}
