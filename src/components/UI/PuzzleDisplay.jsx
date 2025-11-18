@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { UI_ZONES, Z_LAYERS, getUIClasses } from './UILayout.jsx';
 
 /**
  * Puzzle Display - Shows puzzle progress, timer, and instructions
@@ -80,8 +81,8 @@ export function PuzzleDisplay() {
   const progressPercent = progress * 100;
 
   return (
-    <div className="absolute bottom-24 left-4 z-50">
-      <div className="bg-black bg-opacity-80 rounded-lg p-3 min-w-[280px]">
+    <div className={getUIClasses(UI_ZONES.MIDDLE_LEFT, Z_LAYERS.HUD_SECONDARY)}>
+      <div className="bg-black bg-opacity-80 rounded-lg p-3 min-w-[280px] max-w-[320px] pointer-events-auto">
         {/* Puzzle header - compact */}
         <div className="mb-2">
           <div className="text-yellow-400 text-sm font-bold mb-1">
