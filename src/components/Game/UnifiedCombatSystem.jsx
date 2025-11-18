@@ -133,12 +133,26 @@ export function UnifiedCombatSystem({ gameEngine }) {
         });
       }
 
-      // Also collect puzzle target meshes
+      // Also collect puzzle target meshes and puzzle switches
       const puzzleTargetMeshes = [];
+      const puzzleSwitchMeshes = [];
       if (gameEngine.getScene) {
         gameEngine.getScene().traverse((object) => {
           if (object.userData && object.userData.isPuzzleTarget) {
             puzzleTargetMeshes.push(object);
+          }
+          // Collect puzzle switches (switch sequence puzzles)
+          if (object.userData && object.userData.type === 'puzzle_switch') {
+            // Add all mesh children for raycasting
+            if (object.isGroup || object.type === 'Group') {
+              object.traverse((child) => {
+                if (child.isMesh) {
+                  puzzleSwitchMeshes.push(child);
+                }
+              });
+            } else if (object.isMesh) {
+              puzzleSwitchMeshes.push(object);
+            }
           }
         });
       }
@@ -153,8 +167,9 @@ export function UnifiedCombatSystem({ gameEngine }) {
         });
       }
 
-      // Check for intersections - prioritize weapon pickups, puzzle targets, items, projectiles, then enemies
+      // Check for intersections - prioritize weapon pickups, puzzle switches, puzzle targets, items, projectiles, then enemies
       const weaponPickupIntersects = raycasterRef.current.intersectObjects(weaponPickupMeshes);
+      const puzzleSwitchIntersects = raycasterRef.current.intersectObjects(puzzleSwitchMeshes);
       const puzzleIntersects = raycasterRef.current.intersectObjects(puzzleTargetMeshes);
       const itemIntersects = raycasterRef.current.intersectObjects(itemMeshes);
       const projectileIntersects = raycasterRef.current.intersectObjects(projectileMeshes);
@@ -185,6 +200,32 @@ export function UnifiedCombatSystem({ gameEngine }) {
             detail: {
               pickupId: pickupData.pickupId,
               weaponType: pickupData.weaponType
+            }
+          }));
+
+          shotHit = true;
+        }
+      } else if (puzzleSwitchIntersects.length > 0) {
+        // Hit puzzle switch (switch sequence puzzle)
+        const hitSwitch = puzzleSwitchIntersects[0].object;
+
+        // Find the parent group or object with switchId
+        let switchData = null;
+        let currentObj = hitSwitch;
+        while (currentObj && !switchData) {
+          if (currentObj.userData && currentObj.userData.switchId !== undefined) {
+            switchData = currentObj.userData;
+            break;
+          }
+          currentObj = currentObj.parent;
+        }
+
+        if (switchData && switchData.switchId) {
+          // Notify puzzle system about switch hit
+          window.dispatchEvent(new CustomEvent('puzzleSwitchHit', {
+            detail: {
+              switchId: switchData.switchId,
+              position: hitSwitch.position
             }
           }));
 
