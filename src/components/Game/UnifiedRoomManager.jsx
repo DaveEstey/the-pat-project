@@ -486,10 +486,14 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
       
       roomConfig.enemyLayout.forEach((enemyConfig, index) => {
         // Calculate spawn delay with initial breathing room
-        // 2 second initial delay + stagger subsequent enemies by 2 seconds each
-        const initialDelay = 2000; // 2 second breathing room before first enemy
-        const staggerDelay = 2000; // 2 seconds between each enemy
-        const spawnDelay = initialDelay + (index * staggerDelay);
+        // Improved timing for tactical gameplay instead of chaotic
+        const initialDelay = 3000; // 3 second breathing room before first enemy (was 2s)
+        const staggerDelay = 3000; // 3 seconds between each enemy (was 2s)
+        const baseSpawnDelay = initialDelay + (index * staggerDelay);
+
+        // Boss enemies get longer delay for dramatic entrance
+        const bossDelayBonus = (enemyConfig.type === 'boss' || enemyConfig.isBoss) ? 2000 : 0;
+        const spawnDelay = baseSpawnDelay + bossDelayBonus;
 
         // Get stats for this enemy type from the enhanced EnemyStats
         const statsKey = enemyConfig.type === 'basic' ? 'basic_shooter' : enemyConfig.type;
