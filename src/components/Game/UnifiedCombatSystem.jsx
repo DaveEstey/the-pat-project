@@ -1,14 +1,20 @@
 import React, { useEffect, useCallback, useRef } from 'react';
 import * as THREE from 'three';
 import { ComboSystem } from '../../systems/ComboSystem.js';
+import { getParticleSystem } from '../../systems/ParticleEffectsSystem.js';
+import { getScreenShake } from '../../systems/ScreenShakeSystem.js';
+import { getSoundEffects } from '../../systems/SoundEffectsSystem.js';
 
 // Unified Combat System - Single handler for all shooting and damage
 export function UnifiedCombatSystem({ gameEngine }) {
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseRef = useRef(new THREE.Vector2());
   const comboSystemRef = useRef(null);
+  const particleSystemRef = useRef(null);
+  const screenShakeRef = useRef(null);
+  const soundEffectsRef = useRef(null);
 
-  // Initialize combo system
+  // Initialize combo system and effects
   useEffect(() => {
     if (!comboSystemRef.current) {
       comboSystemRef.current = new ComboSystem();
@@ -24,6 +30,21 @@ export function UnifiedCombatSystem({ gameEngine }) {
       comboSystemRef.current.on('break', (data) => {
       });
 
+    }
+
+    // Initialize particle system
+    if (!particleSystemRef.current && gameEngine && gameEngine.getScene) {
+      particleSystemRef.current = getParticleSystem(gameEngine.getScene());
+    }
+
+    // Initialize screen shake
+    if (!screenShakeRef.current && gameEngine && gameEngine.getCamera) {
+      screenShakeRef.current = getScreenShake(gameEngine.getCamera());
+    }
+
+    // Initialize sound effects
+    if (!soundEffectsRef.current) {
+      soundEffectsRef.current = getSoundEffects();
     }
 
     // Update combo system every frame to check for timeout
@@ -488,6 +509,20 @@ export function UnifiedCombatSystem({ gameEngine }) {
         if (gameEngine && gameEngine.getCamera) {
           const camera = gameEngine.getCamera();
           const cameraPosition = camera.position.clone();
+
+          // Create muzzle flash particle effect
+          if (particleSystemRef.current) {
+            const flashPos = camera.position.clone().add(
+              camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(0.5)
+            );
+            particleSystemRef.current.createMuzzleFlash(flashPos, 0xffff00);
+          }
+
+          // Play weapon fire sound
+          if (soundEffectsRef.current) {
+            soundEffectsRef.current.playWeaponFire(weaponType);
+          }
+
           window.dispatchEvent(new CustomEvent('weaponFired', {
             detail: {
               position: cameraPosition,
@@ -496,10 +531,59 @@ export function UnifiedCombatSystem({ gameEngine }) {
             }
           }));
         }
+
+        // Apply damage
         const enemyDied = damageEnemy(enemyId, damage);
         shotHit = true; // Mark shot as hit for accuracy tracking
 
+        // Hit effects
+        if (particleSystemRef.current) {
+          // Blood spatter effect
+          const direction = hitPosition.clone().sub(gameEngine.getCamera().position).normalize();
+          particleSystemRef.current.createBloodEffect(hitPosition, direction, 1.0);
+
+          // Hit spark effect
+          particleSystemRef.current.createHitEffect(hitPosition, new THREE.Vector3(0, 1, 0), 0xff0000);
+        }
+
+        // Screen shake for hit
+        if (screenShakeRef.current) {
+          screenShakeRef.current.shakeSmall();
+        }
+
+        // Play impact sound
+        if (soundEffectsRef.current) {
+          soundEffectsRef.current.playImpact(false, false);
+        }
+
+        // Fire hit marker event for UI
+        window.dispatchEvent(new CustomEvent('weaponHit', {
+          detail: {
+            damage: damage,
+            position: {
+              x: event.clientX,
+              y: event.clientY
+            },
+            isCritical: false,
+            isKill: enemyDied
+          }
+        }));
+
         if (enemyDied) {
+          // Explosion effect on death
+          if (particleSystemRef.current) {
+            particleSystemRef.current.createExplosion(hitPosition, 1.0, 0xff6600);
+          }
+
+          // Bigger screen shake for kill
+          if (screenShakeRef.current) {
+            screenShakeRef.current.shakeMedium();
+          }
+
+          // Play death sound
+          if (soundEffectsRef.current) {
+            soundEffectsRef.current.play('enemy_death');
+          }
 
           // Dispatch enemy death event for explosion effects
           window.dispatchEvent(new CustomEvent('enemyDied', {

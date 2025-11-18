@@ -9,6 +9,7 @@ import PuzzleDisplay from './PuzzleDisplay.jsx';
 import HitMarker from './HitMarker.jsx';
 import NotificationDisplay from './NotificationDisplay.jsx';
 import BossHealthBar from './BossHealthBar.jsx';
+import LowAmmoWarning from './LowAmmoWarning.jsx';
 
 const HUD = () => {
   const { state } = useGame();
@@ -85,6 +86,9 @@ const HUD = () => {
 
       {/* Hit Marker */}
       <HitMarker />
+
+      {/* Low Ammo Warning */}
+      <LowAmmoWarning />
 
       {/* Notifications - Above center (doesn't block crosshair) */}
       <NotificationDisplay />
