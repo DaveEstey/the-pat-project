@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { EnemyStats } from '../../types/enemies.js';
 import { EnemyAISystem } from '../../systems/EnemyAISystem.js';
 import { getWeaponUpgradeSystem } from '../../systems/WeaponUpgradeSystem.js';
+import { BossIntroSequence } from './BossIntroSequence.jsx';
 
 // Helper function to get points for enemy type
 function getPointsForEnemyType(enemyType) {
@@ -22,6 +23,28 @@ function getCurrencyForEnemyType(enemyType) {
     'boss': 100
   };
   return currencyTable[enemyType] || 10; // Default to 10 currency
+}
+
+// Helper function to get boss name based on level
+function getBossName(levelNumber, roomIndex) {
+  const bossNames = {
+    3: 'THE UNDERGROUND GUARDIAN',
+    6: 'HAUNTED PHANTOM LORD',
+    9: 'TEMPLE ANCIENT ONE',
+    12: 'THE ULTIMATE ADVERSARY'
+  };
+  return bossNames[levelNumber] || 'BOSS THREAT';
+}
+
+// Helper function to get boss subtitle
+function getBossSubtitle(levelNumber, roomIndex) {
+  const bossSubtitles = {
+    3: 'Defender of the Fortress Depths',
+    6: 'Master of Dark Spirits',
+    9: 'Keeper of Sacred Knowledge',
+    12: 'Final Test of Skill and Courage'
+  };
+  return bossSubtitles[levelNumber] || 'Prepare for battle';
 }
 
 // Enhanced enemy mesh creation with detailed visuals
@@ -425,6 +448,8 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
   const [enemies, setEnemies] = useState([]);
   const [roomState, setRoomState] = useState('spawning');
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [bossIntroActive, setBossIntroActive] = useState(false);
+  const [bossIntroData, setBossIntroData] = useState(null);
   const meshRefsRef = useRef(new Map()); // Track Three.js meshes for each enemy
   const aiTimerRef = useRef(null); // Timer for enemy AI updates
   const currentRoomRef = useRef({ roomIndex, levelNumber }); // Track current room
@@ -437,6 +462,7 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
   const spawnTimeoutsRef = useRef([]); // Track spawn timeouts for cleanup
   const aiSystemRef = useRef(new EnemyAISystem()); // Enemy AI movement system
   const lastAIUpdateRef = useRef(0); // Track last AI update time
+  const bossSpawnedRef = useRef(false); // Track if boss intro already shown
   
   // Spawn enemies with staggered timing and AI behavior
   const spawnEnemies = useCallback(() => {
@@ -571,23 +597,61 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
     }
     
     setRoomState('spawning');
-    
-    // Immediate fix: Set room to active quickly so enemies can shoot
-    setTimeout(() => {
-      setRoomState('active');
-    }, 500); // Set active after 500ms
-    
-    // Failsafe: Ensure room becomes active after all spawning delays complete
-    const maxSpawnDelay = Math.max(...enemyTemplates.map(e => e.spawnDelay));
-    setTimeout(() => {
-      // Failsafe: ensure room becomes active after spawn delays
-      setRoomState('active');
-      // Mark spawning as complete and clear ALL locks
-      isSpawningRef.current = false;
-      spawnLockRef.current = false;
-      window[globalSpawnKey] = false;
-      window[globalSpawnInProgress] = false;
-    }, maxSpawnDelay + 2000); // Add 2 seconds buffer after longest spawn delay
+
+    // Check for boss enemies and trigger intro sequence
+    const bossEnemy = enemyTemplates.find(e => e.isBoss || e.type === 'boss');
+    const hasBossInRoom = bossEnemy !== undefined;
+
+    if (hasBossInRoom && !bossSpawnedRef.current) {
+      // Mark boss as seen to prevent duplicate intros
+      bossSpawnedRef.current = true;
+
+      // Prepare boss data for intro sequence
+      const bossData = {
+        name: getBossName(levelNumber, roomIndex),
+        category: 'BOSS ENCOUNTER',
+        subtitle: getBossSubtitle(levelNumber, roomIndex),
+        health: bossEnemy.health,
+        maxHealth: bossEnemy.maxHealth || bossEnemy.health,
+        position: bossEnemy.position
+      };
+
+      // Trigger boss intro sequence
+      setBossIntroData(bossData);
+      setBossIntroActive(true);
+
+      // Delay enemy spawning until boss intro completes (5 seconds total)
+      setTimeout(() => {
+        setBossIntroActive(false);
+        startEnemySpawning();
+      }, 5000);
+    } else {
+      // No boss, start spawning immediately
+      startEnemySpawning();
+    }
+
+    function startEnemySpawning() {
+      // Immediate fix: Set room to active quickly so enemies can shoot
+      setTimeout(() => {
+        setRoomState('active');
+      }, 500); // Set active after 500ms
+
+      // Failsafe: Ensure room becomes active after all spawning delays complete
+      const maxSpawnDelay = Math.max(...enemyTemplates.map(e => e.spawnDelay));
+      setTimeout(() => {
+        // Failsafe: ensure room becomes active after spawn delays
+        setRoomState('active');
+        // Mark spawning as complete and clear ALL locks
+        isSpawningRef.current = false;
+        spawnLockRef.current = false;
+        window[globalSpawnKey] = false;
+        window[globalSpawnInProgress] = false;
+      }, maxSpawnDelay + 2000); // Add 2 seconds buffer after longest spawn delay
+
+      spawnEnemiesNow();
+    }
+
+    function spawnEnemiesNow() {
     
     // Spawn enemies one by one with delays - use more reliable timing approach
     enemyTemplates.forEach((enemyTemplate, index) => {
@@ -700,6 +764,7 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
       // Track timeout for cleanup
       spawnTimeoutsRef.current.push(spawnTimeout);
     });
+    } // End spawnEnemiesNow
   }, []); // Remove enemies dependency to prevent re-spawning when enemies change
   
   // Handle room transitions and spawning - consolidated logic
@@ -713,7 +778,7 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
       // Special handling for level restart (when room index goes backwards)
       const isLevelRestart = roomIndex < currentRoomRef.current.roomIndex;
       if (isLevelRestart) {
-        
+
         // Force complete reset of all state
         setHasInitialized(false); // Force re-initialization
         setRoomState('spawning');
@@ -721,6 +786,7 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
         enemyCountRef.current = 0;
         isSpawningRef.current = false;
         spawnLockRef.current = false;
+        bossSpawnedRef.current = false; // Reset boss intro flag
         lastSpawnIdRef.current = null;
         enemyShootTimesRef.current.clear();
         // Clear spawn timeouts for level restart
@@ -760,6 +826,7 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
       // Reset spawning flag for new room
       isSpawningRef.current = false;
       spawnLockRef.current = false; // Reset global spawn lock
+      bossSpawnedRef.current = false; // Reset boss intro flag for new room
       // Clear nuclear window flag for new room
       const oldGlobalSpawnKey = `spawn_lock_L${currentRoomRef.current.levelNumber}R${currentRoomRef.current.roomIndex}`;
       delete window[oldGlobalSpawnKey];
@@ -1596,8 +1663,26 @@ export function UnifiedRoomManager({ gameEngine, onRoomComplete, roomIndex = 0, 
       roomState: roomState
     };
   }, [enemies, damageEnemy, roomState]);
-  
-  return null;
+
+  // Handle boss intro completion
+  const handleBossIntroComplete = useCallback(() => {
+    setBossIntroActive(false);
+    setBossIntroData(null);
+  }, []);
+
+  return (
+    <>
+      {/* Boss Introduction Sequence */}
+      {bossIntroActive && bossIntroData && gameEngine && gameEngine.getCamera && (
+        <BossIntroSequence
+          gameEngine={gameEngine}
+          bossData={bossIntroData}
+          onIntroComplete={handleBossIntroComplete}
+          playerCamera={gameEngine.getCamera()}
+        />
+      )}
+    </>
+  );
 }
 
 export default UnifiedRoomManager;
