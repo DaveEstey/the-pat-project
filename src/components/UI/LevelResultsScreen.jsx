@@ -24,6 +24,19 @@ export function LevelResultsScreen({ levelCompleted, onContinue }) {
     return () => clearInterval(interval);
   }, [onContinue]);
 
+  // Keyboard handler for SPACE to skip
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        onContinue();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [onContinue]);
+
   // Calculate level stats
   const levelScore = state.player.score;
   const accuracy = Math.round(state.player.accuracy);

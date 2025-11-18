@@ -66,7 +66,9 @@ const initialState = {
     showInventory: false,
     showPause: false,
     showSettings: false,
-    itemNotification: null
+    itemNotification: null,
+    showLevelResults: false,
+    completedLevel: null
   },
   settings: {
     masterVolume: 0.7,
@@ -348,7 +350,77 @@ function gameReducer(state, action) {
           unlockedSecrets: []
         }
       };
-      
+
+    case 'SHOW_LEVEL_RESULTS':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          showLevelResults: true,
+          completedLevel: action.payload.level
+        }
+      };
+
+    case 'HIDE_LEVEL_RESULTS':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          showLevelResults: false,
+          completedLevel: null
+        }
+      };
+
+    case 'ADVANCE_TO_NEXT_LEVEL':
+      const nextLevel = state.currentLevel + 1;
+      if (nextLevel > 12) {
+        // Game completed - return to menu
+        return {
+          ...state,
+          gameState: GameStates.MENU,
+          ui: {
+            ...state.ui,
+            showLevelResults: false
+          }
+        };
+      }
+
+      return {
+        ...state,
+        currentLevel: nextLevel,
+        gameState: GameStates.PLAYING,
+        ui: {
+          ...state.ui,
+          showLevelResults: false
+        },
+        level: {
+          enemies: [],
+          items: [],
+          puzzles: [],
+          progress: 0,
+          timeRemaining: 0
+        },
+        rooms: {
+          currentRoom: null,
+          visitedRooms: [],
+          roomHistory: [],
+          completedRooms: [],
+          unlockedSecrets: []
+        }
+      };
+
+    case 'COMPLETE_LEVEL':
+      // Show results screen for current level
+      return {
+        ...state,
+        gameState: GameStates.LEVEL_COMPLETE,
+        ui: {
+          ...state.ui,
+          showLevelResults: true,
+          completedLevel: state.currentLevel
+        }
+      };
+
     default:
       return state;
   }
@@ -430,6 +502,10 @@ export function GameProvider({ children }) {
     unlockSecret: (secretId) => dispatch({ type: 'UNLOCK_SECRET', payload: { secretId } }),
     resetGame: () => dispatch({ type: 'RESET_GAME' }),
     restartLevel: () => dispatch({ type: 'RESTART_LEVEL' }),
+    completeLevel: () => dispatch({ type: 'COMPLETE_LEVEL' }),
+    advanceToNextLevel: () => dispatch({ type: 'ADVANCE_TO_NEXT_LEVEL' }),
+    showLevelResults: (level) => dispatch({ type: 'SHOW_LEVEL_RESULTS', payload: { level } }),
+    hideLevelResults: () => dispatch({ type: 'HIDE_LEVEL_RESULTS' }),
     saveGame: (slotName = 'autosave') => {
       const saveSystem = getSaveSystem();
       return saveSystem.saveGame(state, slotName);
